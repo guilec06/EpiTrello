@@ -1,0 +1,62 @@
+name: epitrello-dev
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: epitrello
+      MYSQL_USER: epitrello
+      MYSQL_PASSWORD: epitrello
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "epitrello", "-pepitrello"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: ./server
+      target: dev
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: epitrello
+      DB_PASSWORD: epitrello
+      DB_NAME: epitrello
+      CLIENT_ORIGIN: http://localhost:5173
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+
+  client:
+    build:
+      context: ./client
+      target: dev
+    restart: unless-stopped
+    depends_on:
+      - server
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+
+volumes:
+  db_data:
