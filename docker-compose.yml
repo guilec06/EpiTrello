@@ -37,6 +37,8 @@ services:
       DB_PASSWORD: epitrello
       DB_NAME: epitrello
       CLIENT_ORIGIN: http://localhost:5173
+    env_file:
+      - .env
     volumes:
       - ./server:/app
       - /app/node_modules
@@ -57,6 +59,18 @@ services:
       - /app/node_modules
     ports:
       - "5173:5173"
+  
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      PMA_HOST: db
+      PMA_USER: epitrello
+      PMA_PASSWORD: epitrello
+    ports:
+      - "8080:80"
 
 volumes:
   db_data:
